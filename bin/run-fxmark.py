@@ -60,15 +60,15 @@ class Runner(object):
             # write/write
             "DWAL",
             "DWOL",
-            #"DWOM",
-            #"DWSL",
-            #"MWRL",
-            #"MWRM",
-            #"MWCL",
-            #"MWCM",
-            #"MWUM",
-            #"MWUL",
-            #"DWTL",
+            "DWOM",
+            "DWSL",
+            "MWRL",
+            "MWRM",
+            "MWCL",
+            "MWCM",
+            "MWUM",
+            "MWUL",
+            "DWTL",
 
             # filebench
             "filebench_varmail",
@@ -79,8 +79,8 @@ class Runner(object):
             "dbench_client",
 
             # read/read
-            "MRPL",
-            "MRPM",
+            #"MRPL",
+            #"MRPM",
             #"MRPH",
             #"MRDM",
             #"MRDL",
