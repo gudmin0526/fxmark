@@ -25,7 +25,7 @@ def catch_ctrl_C(sig, frame):
 class Runner(object):
     # media path
     LOOPDEV = "/dev/loopX"
-    NVMEDEV = "/dev/nvme0n1p1"
+    NVMEDEV = "/dev/nvme0n1"
     HDDDEV  = "/dev/sdX"
     SSDDEV  = "/dev/sdY"
 
@@ -45,7 +45,7 @@ class Runner(object):
         self.DEBUG_OUT     = False
 
         # bench config
-        self.DISK_SIZE     = "32G"
+        self.DISK_SIZE     = "12G"
         self.DURATION      = 5 # seconds
         self.DIRECTIOS     = ["bufferedio", "directio"]  # enable directio except tmpfs -> nodirectio 
         self.MEDIA_TYPES   = ["ssd", "hdd", "nvme", "mem"]
@@ -79,23 +79,23 @@ class Runner(object):
             "dbench_client",
 
             # read/read
-            #"MRPL",
-            #"MRPM",
-            #"MRPH",
-            #"MRDM",
-            #"MRDL",
-            #"DRBH",
-            #"DRBM",
-            #"DRBL",
+            "MRPL",
+            "MRPM",
+            "MRPH",
+            "MRDM",
+            "MRDL",
+            "DRBH",
+            "DRBM",
+            "DRBL",
 
             # read/write
-            # "MRPM_bg",
-            # "DRBM_bg",
-            # "MRDM_bg",
-            # "DRBH_bg",
-            # "DRBL_bg",
-            # "MRDL_bg",
-        ]
+            "MRPM_bg",
+            "DRBM_bg",
+            "MRDM_bg",
+            "DRBH_bg",
+            "DRBL_bg",
+            "MRDL_bg",
+	]                
         self.BENCH_BG_SFX   = "_bg"
 
         # path config
