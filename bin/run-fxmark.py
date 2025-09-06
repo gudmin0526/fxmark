@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import pdb
 import os
+import pdb
 import sys
 import signal
 import subprocess
@@ -11,6 +11,14 @@ from os.path import join
 from perfmon import PerfMon
 
 CUR_DIR = os.path.abspath(os.path.dirname(__file__))
+
+import argparse
+# 250905 debug, 디버깅을 위한 argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--debug', action='store_true', help='Enable debug_mode')
+args = parser.parse_args()
+
+IS_DEBUG_MODE = args.debug
 
 try:
     import cpupol
@@ -175,10 +183,9 @@ class Runner(object):
         self.exec_cmd("mkdir -p " + self.log_dir, self.dev_null)
 
         self.log_fd = open(self.log_path, "bw")
-        p = self.exec_cmd("echo -n \"### SYSTEM         = \"; uname -a", self.redirect)
+        stdout_data, _ = self.exec_cmd("echo -n \"### SYSTEM         = \"; uname -a", self.redirect)
         if self.redirect:
-            for l in p.stdout.readlines():
-                self.log(l.decode("utf-8").strip())
+            self.log(stdout_data) 
         self.log("### DISK_SIZE      = %s"   % self.DISK_SIZE)
         self.log("### DURATION       = %ss"  % self.DURATION)
         self.log("### DIRECTIO       = %s"   % ','.join(self.DIRECTIOS))
@@ -218,9 +225,28 @@ class Runner(object):
         return ncores
 
     def exec_cmd(self, cmd, out=None):
-        p = subprocess.Popen(cmd, shell=True, stdout=out, stderr=out)
-        p.wait()
-        return p
+        if IS_DEBUG_MODE:
+            print("### DEBUG CMD ###")
+            print(cmd)
+            breakpoint()
+
+        p = subprocess.Popen(
+                cmd, 
+                shell=True, 
+                stdout=out, 
+                stderr=out,
+				text=True,
+        )       
+
+        if IS_DEBUG_MODE:
+            print("### AFTER Popen """)
+            breakpoint()		
+
+        # 250904 fix, wait 사용 시 발생하는 데드락 문제 예방을 위해 communicate 사용
+        stdout_data, stderr_data = p.communicate()
+
+        # 250904 fix, (stdout_data, p.returncode)를 튜플로 묶어서 반환
+        return stdout_data, p.returncode
 
     def keep_sudo(self):
         self.exec_cmd("sudo -v", self.dev_null)
@@ -255,13 +281,13 @@ class Runner(object):
         self.keep_sudo()
         self.exec_cmd("sudo sh -c \"echo 0 >/proc/sys/kernel/lock_stat\"",
                       self.dev_null)
-        self.drop_caches()
-        self.exec_cmd("sync", self.dev_null)
+#       self.drop_caches()
+#       self.exec_cmd("sync", self.dev_null)
         self.set_cpus(ncore)
 
     def pre_work(self):
         self.keep_sudo()
-        self.drop_caches()
+#self.drop_caches()
 
     def post_work(self):
         self.keep_sudo()
@@ -272,8 +298,8 @@ class Runner(object):
 
     def umount(self, where):
         while True:
-            p = self.exec_cmd("sudo umount " + where, self.dev_null)
-            if p.returncode != 0:
+            _, return_code = self.exec_cmd("sudo umount " + where, self.dev_null)
+            if return_code != 0:
                 break
         (umount_hook, self.umount_hook) = (self.umount_hook, [])
         map(lambda hook: hook(), umount_hook);
@@ -288,12 +314,12 @@ class Runner(object):
         self.exec_cmd("dd if=/dev/zero of=" 
                       + self.disk_path +  " bs=1G count=1024000",
                       self.dev_null)
-        p = self.exec_cmd(' '.join(["sudo", "losetup",
+        _, return_code = self.exec_cmd(' '.join(["sudo", "losetup",
                                     Runner.LOOPDEV, self.disk_path]), 
                           self.dev_null)
-        if p.returncode == 0:
+        if return_code == 0:
             self.umount_hook.append(self.deinit_mem_disk)
-        return (p.returncode == 0, Runner.LOOPDEV)
+        return (return_code == 0, Runner.LOOPDEV)
 
     def deinit_mem_disk(self):
         self.unset_loopdev()
@@ -316,30 +342,30 @@ class Runner(object):
         return (rc, dev_path)
 
     def mount_tmpfs(self, media, fs, mnt_path):
-        p = self.exec_cmd("sudo mount -t tmpfs -o mode=0777,size="
+        _, return_code = self.exec_cmd("sudo mount -t tmpfs -o mode=0777,size="
                           + self.DISK_SIZE + " none " + mnt_path,
                           self.dev_null)
-        return p.returncode == 0
+        return return_code == 0
 
     def mount_anyfs(self, media, fs, mnt_path):
         (rc, dev_path) = self.init_media(media)
         if not rc:
             return False
 
-        p = self.exec_cmd("sudo mkfs." + fs
+        _, return_code = self.exec_cmd("sudo mkfs." + fs
                           + " " + self.HOWTO_MKFS.get(fs, "")
                           + " " + dev_path,
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
-        p = self.exec_cmd(' '.join(["sudo mount -t", fs,
+        _, return_code = self.exec_cmd(' '.join(["sudo mount -t", fs,
                                     dev_path, mnt_path]),
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
-        p = self.exec_cmd("sudo chmod 777 " + mnt_path,
+        _, return_code = self.exec_cmd("sudo chmod 777 " + mnt_path,
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
         return True
 
@@ -348,24 +374,24 @@ class Runner(object):
         if not rc:
             return False
 
-        p = self.exec_cmd("sudo mkfs.ext4"
+        _, return_code = self.exec_cmd("sudo mkfs.ext4"
                           + " " + self.HOWTO_MKFS.get(fs, "")
                           + " " + dev_path,
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
-        p = self.exec_cmd("sudo tune2fs -O ^has_journal %s" % dev_path,
+        _, return_code = self.exec_cmd("sudo tune2fs -O ^has_journal %s" % dev_path,
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
-        p = self.exec_cmd(' '.join(["sudo mount -t ext4",
+        _, return_code = self.exec_cmd(' '.join(["sudo mount -t ext4",
                                     dev_path, mnt_path]),
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
-        p = self.exec_cmd("sudo chmod 777 " + mnt_path,
+        _, return_code = self.exec_cmd("sudo chmod 777 " + mnt_path,
                           self.dev_null)
-        if p.returncode != 0:
+        if return_code != 0:
             return False
         return True
 
@@ -399,6 +425,10 @@ class Runner(object):
                                 continue
                             if self._match_config(self.FILTER, \
                                                   (media, fs, bench, str(ncore), dio)):
+                                # 250905 debug, 벤치마크 목록들을 확인하기 위함
+                                if IS_DEBUG_MODE: 
+                                    print(media, fs, bench, ncore, dio)
+                                    breakpoint()
                                 yield(media, fs, bench, ncore, dio)
 
     def fxmark_env(self):
@@ -439,10 +469,18 @@ class Runner(object):
                         "--profbegin", "\"%s\"" % self.perfmon_start,
                         "--profend",   "\"%s\"" % self.perfmon_stop,
                         "--proflog", self.perfmon_log])
-        p = self.exec_cmd(cmd, self.redirect)
+        
+        if IS_DEBUG_MODE:
+            breakpoint()
+
+        # 250905 debug, shell과의 차이 분석을 위한 breakpoint 추가
+        stdout_data, _ = self.exec_cmd(cmd, self.redirect)
+    
+        if IS_DEBUG_MODE:
+            breakpoint()	
+
         if self.redirect:
-            for l in p.stdout.readlines():
-                self.log(l.decode("utf-8").strip())
+            self.log(stdout_data)
 
     def fxmark_cleanup(self):
         cmd = ' '.join([self.fxmark_env(),
@@ -518,7 +556,7 @@ if __name__ == "__main__":
     run_config = [
         (Runner.CORE_FINE_GRAIN,
          PerfMon.LEVEL_LOW,
-         ("nvme", "f2fs", "DWAL", "1", "directio")),
+         ("nvme", "f2fs", "DWAL", "1", "bufferedio")),
         # ("mem", "tmpfs", "filebench_varmail", "32", "directio")),
         # (Runner.CORE_COARSE_GRAIN,
         #  PerfMon.LEVEL_PERF_RECORD,
