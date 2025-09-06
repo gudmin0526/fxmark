@@ -39,7 +39,7 @@ static int pre_work(struct worker *worker)
 	snprintf(file, PATH_MAX, "%s/n_blk_alloc-%d.dat", 
 		 test_root, worker->id);
 
-	if ((fd = open(file, O_CREAT | O_RDWR, S_IRWXU)) == -1)
+	if ((fd = open(file, O_CREAT | O_RDWR | O_APPEND, S_IRWXU)) == -1)
 	  goto err_out;
 
 	/* allocate data buffer aligned with pagesize*/
@@ -76,7 +76,9 @@ static int main_work(struct worker *worker)
 	/* append */
 	fd = (int)worker->private[0];
 	for (iter = 0; !bench->stop; ++iter) {
-	        if (write(fd, page, PAGE_SIZE) != PAGE_SIZE)
+	    if (write(fd, page, PAGE_SIZE) != PAGE_SIZE)
+			goto err_out;
+		if (fsync(fd) != 0)
 			goto err_out;
 	}
 out:
