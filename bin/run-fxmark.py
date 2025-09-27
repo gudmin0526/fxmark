@@ -45,7 +45,7 @@ class Runner(object):
     def __init__(self, \
                  core_grain = CORE_COARSE_GRAIN, \
                  pfm_lvl = PerfMon.LEVEL_LOW, \
-                 run_filter = ("*", "*", "*", "*", "*")):
+                 run_filter = ("nvme", "f2fs", "*", "*", "directio")):
         # run config
         self.CORE_GRAIN    = core_grain
         self.PERFMON_LEVEL = pfm_lvl
@@ -54,22 +54,37 @@ class Runner(object):
         self.DEBUG_OUT     = False
 
         # bench config
-        self.DISK_SIZE     = "4G"
-        self.DURATION      = 5 # seconds
+        self.DISK_SIZE     = "1G"
+        self.DURATION      = 300 # seconds
         self.DIRECTIOS     = ["bufferedio", "directio"]  # enable directio except tmpfs -> nodirectio 
         self.MEDIA_TYPES   = ["ssd", "hdd", "nvme", "mem"]
-#        self.FS_TYPES      = [
         self.FS_TYPES      = ["tmpfs",
                               "ext4", "ext4_no_jnl",
                               "xfs",
                               "btrfs", "f2fs",
                               # "jfs", "reiserfs", "ext2", "ext3",
         ]
+        self.BENCH_DATA_WR = [
+            "DWAL",
+            "DWOL",
+            "DWSL",
+			"DWTL",
+			"DWOM",
+        ]
+        self.BENCH_META_WR = [
+            "MWRL",
+			"MWRM",
+            "MWCL",
+			"MWCM",
+			"MWUM",
+			"MWUL",
+        ]
         self.BENCH_TYPES   = [
             # write/write
             "DWAL",
             "DWOL",
             "DWOM",
+			"DWTL",
             "DWSL",
             "MWRL",
             "MWRM",
@@ -77,7 +92,6 @@ class Runner(object):
             "MWCM",
             "MWUM",
             "MWUL",
-            "DWTL",
 
             # filebench
             "filebench_varmail",
@@ -408,6 +422,10 @@ class Runner(object):
         for (k1, k2) in zip(key1, key2):
             if k1 == "*" or k2 == "*":
                 continue
+            if k1 == "DATA_WR" and k2 in self.BENCH_DATA_WR:
+                return True
+            if k1 == "META_WR" and k2 in self.BENCH_META_WR:
+                return True
             if k1 != k2:
                 return False
         return True
@@ -554,9 +572,9 @@ if __name__ == "__main__":
 
     # TODO: make it scriptable
     run_config = [
-        (Runner.CORE_FINE_GRAIN,
+        (Runner.CORE_COARSE_GRAIN,
          PerfMon.LEVEL_LOW,
-         ("nvme", "f2fs", "DWAL", "1", "bufferedio")),
+         ("nvme", "f2fs", "DWAL", "2", "directio")),
         # ("mem", "tmpfs", "filebench_varmail", "32", "directio")),
         # (Runner.CORE_COARSE_GRAIN,
         #  PerfMon.LEVEL_PERF_RECORD,
