@@ -71,6 +71,7 @@ static int pre_work(struct worker *worker)
 				goto end_create;
 			goto err_out;
 		}
+
 		close(fd);
 	}
 end_create:
@@ -97,18 +98,31 @@ static int main_work(struct worker *worker)
 	uint64_t iter;
 	int rc = 0;
 
+	struct fx_opt *fx_opt = fx_opt_worker(worker);
+	
+	sprintf(new_dir_path, "%s", fx_opt->root);
+	sprintf(old_dir_path, "%s/%d", fx_opt->root, worker->id);
+
+	new_dir_fd = open(new_dir_path, O_RDONLY);
+	old_dir_fd = open(old_dir_path, O_RDONLY);
+
 	for (iter = 0; iter < worker->private[0] && !bench->stop; ++iter) {
 		set_test_file(worker, iter, old_path);
 		set_renamed_test_file(worker, iter, new_path);
+		
 		rc = rename(old_path, new_path);
 		if (rc) goto err_out;
 	}
 out:
 	bench->stop = 1;
+	close(old_dir_fd);
+	close(new_dir_fd);
 	worker->works = (double)iter;
 	return rc;
 err_out:
 	rc = errno;
+	close(old_dir_fd);
+	close(new_dir_fd);
 	goto out;
 }
 
