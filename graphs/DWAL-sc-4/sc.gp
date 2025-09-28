@@ -1,7 +1,7 @@
-# LOG_FILE = logs/2025-09-27-16-10-12.878677/fxmark.log
-# SYSTEM = Linux fvm 5.15.0c8f3389+ #1 SMP Sat May 31 13:52:48 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+# LOG_FILE = logs/2025-09-28-12-07-41.925531/fxmark.log
+# SYSTEM = Linux fvm 5.15.0d3846e8+ #2 SMP Sat Sep 27 17:03:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
 # DISK_SIZE = 1G
-# DURATION = 300s
+# DURATION = 180s
 # DIRECTIO = bufferedio,directio
 # MEDIA_TYPES = ssd,hdd,nvme,mem
 # FS_TYPES = tmpfs,ext4,ext4_no_jnl,xfs,btrfs,f2fs
@@ -12,7 +12,7 @@
 # PHYSICAL_CHIPS = 1
 # CORE_PER_CHIP = 4
 # SMT_LEVEL = 1
-# NUM_TEST_CONF = 1
+# NUM_TEST_CONF = 3
 
 set term pdfcairo size 4.6in,2.3in font ',10'
 set_out='set output "`if test -z $OUT; then echo sc.pdf; else echo $OUT; fi`"'
