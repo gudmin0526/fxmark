@@ -55,7 +55,7 @@ class Runner(object):
 
         # bench config
         self.DISK_SIZE     = "1G"
-        self.DURATION      = 300 # seconds
+        self.DURATION      = 180 # seconds
         self.DIRECTIOS     = ["bufferedio", "directio"]  # enable directio except tmpfs -> nodirectio 
         self.MEDIA_TYPES   = ["ssd", "hdd", "nvme", "mem"]
         self.FS_TYPES      = ["tmpfs",
@@ -574,7 +574,7 @@ if __name__ == "__main__":
     run_config = [
         (Runner.CORE_COARSE_GRAIN,
          PerfMon.LEVEL_LOW,
-         ("nvme", "f2fs", "DWAL", "2", "directio")),
+         ("nvme", "f2fs", "DWAL", "*", "directio")),
         # ("mem", "tmpfs", "filebench_varmail", "32", "directio")),
         # (Runner.CORE_COARSE_GRAIN,
         #  PerfMon.LEVEL_PERF_RECORD,
